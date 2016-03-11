@@ -1,0 +1,69 @@
+#include <stdio.h>
+#include <stdlib.h>
+#include <unistd.h>
+#include <error.h>
+#include <string.h>
+#include <fcntl.h>
+#include <poll.h>
+
+#define MAX_SIZE 1024
+
+
+void create_fifos(int no_of_fds){
+	char myfifo[MAX_SIZE];
+	int i,x;
+	for(i=0;i<no_of_fds;i++){
+		snprintf(myfifo,MAX_SIZE,"/home/niks/my_codes/comp_network/client_server/myfifo%d",i);
+		if((x = mkfifo(myfifo,0777)) != -1){
+			printf("fifo myfifo%d generated..\n",i);
+		}
+	}
+}
+
+
+void unlink_fifos(int no_of_fds){
+	int i;
+	for(i=0;i<no_of_fds;i++){
+		char myfifo[MAX_SIZE];
+		snprintf(myfifo,MAX_SIZE,"/home/niks/my_codes/comp_network/client_server/myfifo%d",i);
+		unlink(myfifo);
+	}
+}
+
+
+int main(int argc, char** argv){
+	
+	if(argc!=2){
+		perror("Format : ./a.out <NO_OF_CLIENTS>");
+		exit(0);
+	}
+	
+	
+	printf("%d %s %s\n",argc,argv[0],argv[1]);
+	
+	int no_of_fds = atoi(argv[1]);
+	create_fifos(no_of_fds);	//fifo created
+	
+	int i,fd[no_of_fds];
+	
+	while(1){
+		char msg[MAX_SIZE];
+		/*printf("Enter your msg. Type \"exit\" to exit from program.\n");
+		scanf("%s",msg);*/
+		
+		for(i=0;i<no_of_fds;i++){
+			char myfifo[MAX_SIZE];
+			snprintf(myfifo,MAX_SIZE,"/home/niks/my_codes/comp_network/client_server/myfifo%d",i);
+			fd[i] = open(myfifo,O_RDONLY);
+			read(fd[i],msg,MAX_SIZE);
+			printf("Read message from client%d is : %s\n",i,msg);
+			close(fd[i]);
+		}
+		if(strcmp(msg,"exit") == 0){
+				break;
+		}
+	}
+	
+	unlink_fifos(no_of_fds);	//fifo destroyed
+	return 0;
+}
